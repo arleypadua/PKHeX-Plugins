@@ -1322,13 +1322,35 @@ public static class APILegality
             }
         }
 
+        if (OperatingSystem.IsBrowser())
+        {
+            return GetLegal();
+        }
+
         var task = Task.Run(GetLegal);
         var first = task.TimeoutAfter(new TimeSpan(0, 0, 0, Timeout))?.Result;
         return first ?? new AsyncLegalizationResult(template, LegalizationResult.Timeout);
     }
 
-    public static AsyncLegalizationResult AsyncGetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set) =>
-        GetLegalFromTemplateTimeoutAsync(dest, template, set).ConfigureAwait(false).GetAwaiter().GetResult();
+    public static AsyncLegalizationResult AsyncGetLegalFromTemplateTimeout(this ITrainerInfo dest, PKM template, IBattleTemplate set)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            try
+            {
+                if (!EnableDevMode && ALMVersion.GetIsMismatch())
+                    return new(template, LegalizationResult.VersionMismatch);
+
+                var res = dest.GetLegalFromTemplate(template, set, out var s);
+                return new AsyncLegalizationResult(res, s);
+            }
+            catch (MissingMethodException)
+            {
+                return new AsyncLegalizationResult(template, LegalizationResult.VersionMismatch);
+            }
+        }
+        return GetLegalFromTemplateTimeoutAsync(dest, template, set).ConfigureAwait(false).GetAwaiter().GetResult();
+    }
 
     public static async Task<AsyncLegalizationResult> GetLegalFromTemplateTimeoutAsync(this ITrainerInfo dest, PKM template, IBattleTemplate set)
     {
@@ -1346,6 +1368,11 @@ public static class APILegality
             {
                 return new AsyncLegalizationResult(template, LegalizationResult.VersionMismatch);
             }
+        }
+
+        if (OperatingSystem.IsBrowser())
+        {
+            return GetLegal();
         }
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Timeout));
