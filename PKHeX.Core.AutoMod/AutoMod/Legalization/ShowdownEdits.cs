@@ -39,7 +39,14 @@ public static class ShowdownEdits
     {
         if (pk.Nature == set.Nature || set.Nature == Nature.Random)
             return;
-
+        if (enc.Generation <= 2 && pk.Format >= 7)
+        {
+            if (pk.MetLevel == 2)
+            {
+                if (!Experience.IsValidNatureMetLevel2(pk.CurrentLevel, set.Nature) && pk.CurrentLevel != 2)
+                    pk.MetLevel = 3;
+            }
+        }
         var val = set.Nature <= Nature.Quirky ? set.Nature : Nature.Hardy;
         if (pk.Species == (ushort)Species.Toxtricity)
         {
@@ -399,8 +406,21 @@ public static class ShowdownEdits
             gb.MaxEVs();
             return;
         }
-
-        pk.SetEVs(set.EVs);
+        if (set.IsChampions)
+            pk.SetEVsChampions(set.EVs);
+        else
+            pk.SetEVs(set.EVs);
+    }
+    /// <summary>
+    /// Convert Champions EVs to regular EVs and set them for the PKM. Champions EVs are on a different scale, so they need to be converted before being applied.
+    /// </summary>
+    /// <param name="pk"></param>
+    /// <param name="evs"></param>
+    public static void SetEVsChampions(this PKM pk, ReadOnlySpan<int> evs)
+    {
+        Span<int> final = stackalloc int[6];
+        EffortValues.ConvertFromChampions(evs, final);
+        pk.SetEVs(final);
     }
     /// <summary>
     /// Set encounter trade IVs for a specific encounter trade

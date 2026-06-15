@@ -571,7 +571,7 @@ public static class APILegality
 
         // Actions that do not affect set legality
         pk.SetHandlerAndMemory(handler, enc);
-        pk.SetFriendship(enc);
+        pk.SetFriendship(enc, set.Friendship);
         pk.SetRecordFlags(set.Moves);
 
         // Legality Fixing
@@ -743,7 +743,7 @@ public static class APILegality
     /// </summary>
     private static void SetPINGA(this PKM pk, IBattleTemplate set, PIDType method, int hpType, IEncounterTemplate enc)
     {
-        if (enc is not EncounterStatic4Pokewalker && enc.Generation > 2)
+        if (enc is not EncounterStatic4Pokewalker && (enc.Generation > 2 || (enc.Generation <= 2 && pk.Format >= 7)))
             ShowdownEdits.SetNature(pk, set, enc);
 
         // If PID and IV is handled in PreSetPIDIV, don't set it here again and return out
@@ -1229,9 +1229,10 @@ public static class APILegality
     {
         if (enc is (IEncounterEgg and not EncounterEgg8b))
             return criteria;
-        if (enc.Generation > 7)
-            criteria = criteria with { Nature = Nature.Random };
-        return enc.Species switch
+        
+        if (enc is EncounterStatic8U)
+            return criteria with { Nature = Nature.Random };
+        criteria = enc.Species switch
         {
             (int)Species.Kartana when criteria is { Nature: Nature.Timid, IV_ATK: <= 21 } => // Beast Boost: Speed
                 Revise(criteria, atk: criteria.IV_ATK),
@@ -1242,6 +1243,9 @@ public static class APILegality
             (int)Species.Unown when enc.Generation is 4 => criteria with { Form = (sbyte)set.Form},
             _ => Revise(criteria, atk: criteria.IV_ATK == 0 ? (sbyte)0 : (sbyte)-1, spe: criteria.IV_SPE == 0 ? (sbyte)0 : (sbyte)-1),
         };
+        if (enc.Generation > 7)
+            criteria = criteria with { Nature = Nature.Random };
+        return criteria;
     }
 
     private static EncounterCriteria Revise(EncounterCriteria enc,

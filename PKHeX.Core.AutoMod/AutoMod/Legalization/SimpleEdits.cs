@@ -357,7 +357,8 @@ public static class SimpleEdits
     /// </summary>
     /// <param name="pk">The PKM to modify.</param>
     /// <param name="enc">The encounter template.</param>
-    public static void SetFriendship(this PKM pk, IEncounterTemplate enc)
+    /// <param name="friendship">The friendship value to set.</param>
+    public static void SetFriendship(this PKM pk, IEncounterTemplate enc, byte friendship)
     {
         if (enc.Generation <= 2)
         {
@@ -369,11 +370,11 @@ public static class SimpleEdits
         if (wasNeverOriginalTrainer)
         {
             pk.OriginalTrainerFriendship = (byte)GetBaseFriendship(enc);
-            pk.HandlingTrainerFriendship = pk.HasMove(218) ? (byte)0 : (byte)255;
+            pk.HandlingTrainerFriendship = pk.HasMove(218) ? (byte)0 : friendship;
         }
         else
         {
-            pk.CurrentFriendship = pk.HasMove(218) ? (byte)0 : (byte)255;
+            pk.CurrentFriendship = pk.HasMove(218) ? (byte)0 : friendship;
         }
     }
 
@@ -540,9 +541,9 @@ public static class SimpleEdits
     {
         if (TradeRestrictions.IsUntradableEncounter(enc))
             return;
-
+        if (enc.Version == GameVersion.PLA && trainer.Version == GameVersion.PLA) { pk.OriginalTrainerGender = trainer.Gender; } //just use the link cable item HT not required;
         var expect = trainer.IsFromTrainer(pk) ? 0 : 1;
-        if (pk.CurrentHandler == expect && expect == 0 && !IsTradeEvolutionRequired((Species)enc.Species))
+        if (pk.CurrentHandler == expect && expect == 0 && !IsTradeEvolutionRequired((Species)pk.Species, enc))
             return;
 
         pk.CurrentHandler = 1;
@@ -757,34 +758,40 @@ public static class SimpleEdits
     /// <returns>Held item ID or null.</returns>
     public static int? GetGenesectHeldItemFromForm(int form) => form == 0 ? null : form + 115;
 
-    public static bool IsTradeEvolutionRequired(Species species) => species switch
+    public static bool IsTradeEvolutionRequired(Species species, IEncounterTemplate enc)
     {
-        Kadabra or
-        Machoke or
-        Graveler or
-        Haunter or
-        Boldore or
-        Gurdurr or
-        Phantump or
-        Pumpkaboo or
-        Poliwhirl or
-        Slowpoke or
-        Onix or
-        Scyther or
-        Seadra or
-        Porygon or
-        Porygon2 or
-        Rhydon or
-        Electabuzz or
-        Magmar or
-        Dusclops or
-        Clamperl or
-        Feebas or
-        Spritzee or
-        Swirlix or
-        Shelmet or
-        Karrablast => true,
+        if (enc.Species == (ushort)species) //if its already evolved, doesn't need to be traded;
+            return false;
+        return species switch
+        {
+            Alakazam or
+            Machamp or
+            Golem or
+            Gengar or
+            Gigalith or
+            Conkeldurr or
+            Trevenant or
+            Gourgeist or
+            Politoed or
+            Slowking or
+            Steelix or
+            Scizor or
+            Kingdra or
+            Porygon2 or
+            PorygonZ or
+            Rhyperior or
+            Electivire or
+            Magmortar or
+            Dusknoir or
+            Huntail or
+            Gorebyss or
+            Milotic or
+            Aromatisse or
+            Slurpuff or
+            Accelgor or
+            Escavalier => true,
 
-        _ => false,
-    };
+            _ => false,
+        };
+    }
 }
