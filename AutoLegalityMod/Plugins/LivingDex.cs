@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Microsoft.VisualBasic.Devices;
 using System.Threading.Tasks;
 using AutoModPlugins.GUI;
+using System.Threading;
 
 namespace AutoModPlugins;
 
@@ -27,7 +28,7 @@ public class LivingDex : AutoModPlugin
         ctrl.Name = "Menu_LivingDex";
         modmenu.DropDownItems.Add(ctrl);
     }
-
+    public static CancellationTokenSource cts;
     private async void GenLivingDex(object? sender, EventArgs e)
     {
         var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Generate a Living Dex?");
@@ -35,18 +36,20 @@ public class LivingDex : AutoModPlugin
             return;
         bool egg = new Keyboard().AltKeyDown;
         var sav = SaveFileEditor.SAV;
-        var t = new ALMStatusBar("Living Dex", sav.MaxSpeciesID)
-        {
-            Count = ModLogic.TrackingCount
-        };
+        var t = new ALMStatusBar("Living Dex", sav.MaxSpeciesID);
         t.Show();
-
+        cts = new();
         // After showing the form, start a polling loop
         _ = Task.Run(() => PollingLoop(t));
 
-        var dex = await Task.Run(() => egg ? sav.GenerateLivingEggDex(sav.Personal) : sav.GenerateLivingDex(sav.Personal));
+        var dex = await Task.Run(() => egg ? sav.GenerateLivingEggDex(sav.Personal) : sav.GenerateLivingDex(sav.Personal), cts.Token);
+        if (cts.IsCancellationRequested)
+            return;
+
         List<PKM> extra = [];
+        t.closedbyuser = false;
         t.Close();
+        cts.Cancel();
         prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Overwrite any existing Pokémon in your boxes?");
         int generated = IngestToBoxes(sav, dex, extra, prompt == DialogResult.Yes);
         System.Diagnostics.Debug.WriteLine($"Generated Living Dex with {generated} entries.");

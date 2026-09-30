@@ -151,7 +151,7 @@ public static class ShowdownEdits
             sv.WeightAbsolute = sv.CalcWeightAbsolute;
         }
 
-        // Don't allow invalid Toxtricity nature, set random Nature first and then StatNature later
+        // Don't allow invalid Toxtricity nature, set random Nature first and then StatAlignment later
         if (pk.Species == (int)Species.Toxtricity)
         {
             while (true)

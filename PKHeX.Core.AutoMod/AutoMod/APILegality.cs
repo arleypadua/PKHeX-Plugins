@@ -114,7 +114,7 @@ public static class APILegality
             // Create the PKM from the template.
             var tr = TradeRestrictions.IsUntradableEncounter(enc) ? dest : GetTrainer(regen, enc, set, dest);
             var raw = enc.GetPokemonFromEncounter(tr, criteria, set);
-            if (raw.OriginalTrainerName.Length == 0)
+            if (raw.OriginalTrainerName.Length == 0 || (enc.Context == EntityContext.Gen1 && enc is EncounterSlot1 or EncounterStatic1 && enc.Species != (ushort)Species.Porygon))
             {
                 raw.Language = tr.Language;
                 tr.ApplyTo(raw);
@@ -139,7 +139,7 @@ public static class APILegality
                         break;
                     case IGenerateSeed64 GS64:
                         var converted64 = Convert.ToUInt64(regen.SeedFilters[0], 16);
-                        GS64.GenerateSeed64(raw, converted64); break;
+                        GS64.GenerateSeed64(raw, tr, converted64); break;
                 }
             }
             else
